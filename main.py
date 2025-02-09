@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Query
 from fastapi.responses import JSONResponse
 import cv2
 import numpy as np
@@ -22,7 +22,7 @@ def read_image_file(file_content) -> np.ndarray:
     return image
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(file: UploadFile = File(...), img_response: bool = Query(default=False), num_of_classes: int = Query(default=None)):
     try:
         # Read the image file
         contents = await file.read()
@@ -42,6 +42,12 @@ async def predict(file: UploadFile = File(...)):
         
         # Format results
         predictions = []
+        
+        if num_of_classes is not None:
+            pred_boxes = pred_boxes[:num_of_classes]
+            pred_classes = pred_classes[:num_of_classes]
+            pred_scores = pred_scores[:num_of_classes]
+
         for box, class_id, score in zip(pred_boxes, pred_classes, pred_scores):
             predictions.append({
                 "box": {
