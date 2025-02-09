@@ -4,7 +4,29 @@ This project implements a FastAPI-based REST API for object detection using YOLO
 
 ## Setup
 
-### Prerequisites
+You can run this project either using Docker or directly on your system.
+
+### Docker Setup (Recommended)
+
+1. Build the Docker image:
+```bash
+docker build -t yolo-nas-api .
+```
+
+2. Run the container:
+```bash
+# If you have a GPU:
+docker run --gpus all -p 8000:8000 yolo-nas-api
+
+# If you don't have a GPU:
+docker run -p 8000:8000 yolo-nas-api
+```
+
+The API will be available at http://localhost:8000
+
+### Local Setup
+
+#### Prerequisites
 - Python 3.10
 - CUDA-capable GPU (optional, but recommended for better performance)
 - Conda (recommended for environment management)
