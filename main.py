@@ -1,11 +1,9 @@
 from fastapi import FastAPI, File, UploadFile, Query
 from fastapi.responses import JSONResponse
 import cv2
-import numpy as np
 import torch
 import super_gradients.training.models
-import io
-from PIL import Image
+from image.utils import read_image_file, create_image_response
 
 app = FastAPI()
 
@@ -13,13 +11,6 @@ app = FastAPI()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 model = super_gradients.training.models.get("yolo_nas_s", pretrained_weights="coco").to(device)
-
-def read_image_file(file_content) -> np.ndarray:
-    # Convert the uploaded file to an image
-    image = Image.open(io.BytesIO(file_content))
-    # Convert PIL Image to cv2 image
-    image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    return image
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...), img_response: bool = Query(default=False), num_of_classes: int = Query(default=None)):
@@ -60,9 +51,22 @@ async def predict(file: UploadFile = File(...), img_response: bool = Query(defau
                 "score": float(score)
             })
         
+        if img_response:
+            # Save temporary image for visualization
+            cv2.imwrite("media/temp_image.jpg", image)
+            response = create_image_response(predictions)
+            # Clean up temporary file
+            import os
+            os.remove("media/temp_image.jpg")
+            return response
+        
         return JSONResponse(content={"predictions": predictions})
     
     except Exception as e:
+        # Clean up temporary file in case of error
+        import os
+        if os.path.exists("media/temp_image.jpg"):
+            os.remove("media/temp_image.jpg")
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.get("/")
